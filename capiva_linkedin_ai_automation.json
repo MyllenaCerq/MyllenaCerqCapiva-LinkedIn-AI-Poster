@@ -1,0 +1,751 @@
+{
+    "name": "My workflow LinkedIn posts using a n8n AI agent",
+    "nodes": [
+      {
+        "parameters": {},
+        "type": "n8n-nodes-base.manualTrigger",
+        "typeVersion": 1,
+        "position": [
+          0,
+          0
+        ],
+        "id": "91fd6ae9-45e0-407d-b6e9-9aee6be41f16",
+        "name": "When clicking ‘Test workflow’"
+      },
+      {
+        "parameters": {
+          "url": "https://venturebeat.com/category/ai/feed/",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.rssFeedRead",
+        "typeVersion": 1.1,
+        "position": [
+          220,
+          0
+        ],
+        "id": "8a4ea35c-0b41-4f3b-af8c-c14fc8249022",
+        "name": "RSS Read"
+      },
+      {
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "b35522ca-68b4-4ef6-aaea-d94371cccedd",
+                "name": "title",
+                "value": "={{ $json.title }}",
+                "type": "string"
+              },
+              {
+                "id": "ccab7a5b-ae95-434b-928c-678f3cb434fb",
+                "name": "link",
+                "value": "={{ $json.link }}",
+                "type": "string"
+              },
+              {
+                "id": "80287f33-91e4-4988-a214-fa6953943b40",
+                "name": "contentSnippet",
+                "value": "={{ $json.contentSnippet }}",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          440,
+          0
+        ],
+        "id": "edb8099a-b933-497b-8ccd-1b30c4d51ae6",
+        "name": "Edit Fields"
+      },
+      {
+        "parameters": {
+          "aggregate": "aggregateAllItemData",
+          "destinationFieldName": "news",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.aggregate",
+        "typeVersion": 1,
+        "position": [
+          660,
+          0
+        ],
+        "id": "30c52a85-f3f4-463a-9254-b557aeccef7f",
+        "name": "Aggregate"
+      },
+      {
+        "parameters": {
+          "promptType": "define",
+          "text": "=I'm creating a weekly digest from the latest AI articles for SMB executives.  \nHelp me to pick 5 articles worth reading for these executives.  \nOnly pick the ones that would be interesting for small and medium business owners.\n\n{{ JSON.stringify($json.news) }}\n",
+          "hasOutputParser": true
+        },
+        "type": "@n8n/n8n-nodes-langchain.chainLlm",
+        "typeVersion": 1.6,
+        "position": [
+          880,
+          0
+        ],
+        "id": "2521073c-0937-4a3f-89d5-b2b4717b641d",
+        "name": "Basic LLM Chain"
+      },
+      {
+        "parameters": {
+          "model": {
+            "__rl": true,
+            "mode": "list",
+            "value": "gpt-4o-mini"
+          },
+          "options": {}
+        },
+        "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+        "typeVersion": 1.2,
+        "position": [
+          860,
+          200
+        ],
+        "id": "0ffcdc70-9ea4-4fe1-b832-6c6209f3f687",
+        "name": "OpenAI Chat Model",
+        "credentials": {
+          "openAiApi": {
+            "id": "nLPqEkDIvwVLWo7n",
+            "name": "OpenAi account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsonSchemaExample": "{\n\t\"articles\" : [{\n      \"title\"  : \"\", \n      \"link\" : \"\"\n    }]\n}"
+        },
+        "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+        "typeVersion": 1.2,
+        "position": [
+          1060,
+          200
+        ],
+        "id": "34e6d22a-3946-4ca5-aa11-fa5e84ef5472",
+        "name": "Structured Output Parser"
+      },
+      {
+        "parameters": {
+          "fieldToSplitOut": "output.articles",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.splitOut",
+        "typeVersion": 1,
+        "position": [
+          1240,
+          0
+        ],
+        "id": "ef0c06c0-63f4-446a-9952-12d3dfce30aa",
+        "name": "Split Out"
+      },
+      {
+        "parameters": {
+          "url": "={{ $json.link }}",
+          "options": {
+            "redirect": {
+              "redirect": {}
+            }
+          }
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [
+          1460,
+          0
+        ],
+        "id": "3af4d32a-4832-4faf-ae1a-f490a61026de",
+        "name": "HTTP Request"
+      },
+      {
+        "parameters": {
+          "operation": "extractHtmlContent",
+          "extractionValues": {
+            "values": [
+              {
+                "key": "article",
+                "cssSelector": "article",
+                "skipSelectors": ".post-boilerplate,.boilerplate-befor"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.html",
+        "typeVersion": 1.2,
+        "position": [
+          1680,
+          0
+        ],
+        "id": "d4c356f7-9df2-4ab9-bce2-029ae27a70ed",
+        "name": "HTML"
+      },
+      {
+        "parameters": {
+          "aggregate": "aggregateAllItemData",
+          "destinationFieldName": "articles",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.aggregate",
+        "typeVersion": 1,
+        "position": [
+          1900,
+          0
+        ],
+        "id": "2f5032d3-615e-47da-9e89-cee84f3e1888",
+        "name": "Aggregate1"
+      },
+      {
+        "parameters": {
+          "promptType": "define",
+          "text": "=use the articles below to create an engaging content for SMB business owners.\n\n<instructions>\n– Don't use any markdown for the LinkedIn post as it's not supported (no bold, heading etc.) Use clear text for formatting.\n– Make sure to add the link to the article under its summary.\n– Add a summary of the post (hook) to the beginning of the post. It should consist of 2 short sentences, and needs to grab the attention. Make sure to mention AI in it.\n– also make sure the news summaries explains why it's important for SMB business owners, make it one sentence.\n</instructions>\n\n<articles>\n{{ JSON.stringify($json.articles) }}\n</articles>\n"
+        },
+        "type": "@n8n/n8n-nodes-langchain.chainLlm",
+        "typeVersion": 1.6,
+        "position": [
+          2120,
+          0
+        ],
+        "id": "f9f72496-9fba-4e47-867c-ade89f766e16",
+        "name": "Basic LLM Chain1"
+      },
+      {
+        "parameters": {
+          "model": {
+            "__rl": true,
+            "mode": "list",
+            "value": "gpt-4o-mini"
+          },
+          "options": {}
+        },
+        "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+        "typeVersion": 1.2,
+        "position": [
+          2120,
+          160
+        ],
+        "id": "422222cd-739d-4a79-83ae-d32fb1ee605b",
+        "name": "OpenAI Chat Model1",
+        "credentials": {
+          "openAiApi": {
+            "id": "nLPqEkDIvwVLWo7n",
+            "name": "OpenAi account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "promptType": "define",
+          "text": "=Rewrite the following linkedin post to match the style of the example post.  \nMake sure to keep it as plain text. Please, write in pt-br.\n\n<ExamplePost>\nSeu time está corre o tempo todo.\n\nMas… será que está indo pra algum lugar?\n\nEssa é a realidade de muitos times que confundem movimento com avanço.\n\nNo carrossel de hoje, a gente mostra 5 sinais que podem indicar que sua operação está girando sem sair do lugar.\n\n👇 Faça o teste rápido:\n\n✅ Checklist da eficiência real:\n1️⃣ Você acompanha muitos dados, mas as decisões demoram pra sair?\n2️⃣ O time se dedica ao máximo, mas os resultados seguem medianos?\n3️⃣ Já automatizou, mas os gargalos continuam no dia a dia?\n4️⃣ Tem vários projetos em andamento, mas pouco impacto concreto?\n5️⃣ A rotina parece sempre urgente, sem espaço pra refletir e melhorar?\n\n⚠️ Se você marcou 2 ou mais:\n\n Provavelmente você está correndo em círculos e isso custa caro.\n\nAqui na Capiva, a gente já viu isso acontecer em empresas com ótimos times e boa tecnologia.\n\n E quase sempre, o problema não é esforço. É direção.\n\nQuer conversar sobre o que pode estar travando seu time? Manda uma mensagem e siga a página!\n</ExamplePost>\n\n<Article>\n {{ $json.text }}\n</Article>"
+        },
+        "type": "@n8n/n8n-nodes-langchain.chainLlm",
+        "typeVersion": 1.6,
+        "position": [
+          2480,
+          0
+        ],
+        "id": "6b6fa0be-6760-4ec8-ad0d-4dfedbf4e23c",
+        "name": "Basic LLM Chain2"
+      },
+      {
+        "parameters": {
+          "model": {
+            "__rl": true,
+            "value": "gpt-4o",
+            "mode": "list",
+            "cachedResultName": "gpt-4o"
+          },
+          "options": {}
+        },
+        "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+        "typeVersion": 1.2,
+        "position": [
+          2500,
+          180
+        ],
+        "id": "27046df4-ad0f-4191-9673-62c44202be91",
+        "name": "OpenAI Chat Model2",
+        "credentials": {
+          "openAiApi": {
+            "id": "nLPqEkDIvwVLWo7n",
+            "name": "OpenAi account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "operation": "sendAndWait",
+          "sendTo": "myllenacerq.contato@gmail.com",
+          "subject": "=[VALIDATION] LinkedIn Post",
+          "message": "={{ $json.linkedin_post }}",
+          "responseType": "customForm",
+          "formFields": {
+            "values": [
+              {
+                "fieldLabel": "Post Validado? ✨",
+                "fieldType": "dropdown",
+                "fieldOptions": {
+                  "values": [
+                    {
+                      "option": "Sim, pode seguir! 😄"
+                    },
+                    {
+                      "option": "Não, sugerir melhorias! 🤔"
+                    }
+                  ]
+                },
+                "requiredField": true
+              },
+              {
+                "fieldLabel": "Alterações Sugeridas 👇",
+                "fieldType": "textarea",
+                "placeholder": "O que você gostaria de sugerir?  "
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.gmail",
+        "typeVersion": 2.1,
+        "position": [
+          3060,
+          0
+        ],
+        "id": "75e2675a-2ee6-4c1d-9b1c-7e26082ed62b",
+        "name": "Gmail",
+        "webhookId": "b7752543-8a63-499e-b70d-f2f700361492",
+        "credentials": {
+          "gmailOAuth2": {
+            "id": "Nar6fWxOWLqRLEnz",
+            "name": "Gmail account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 2
+            },
+            "conditions": [
+              {
+                "id": "ac445c73-510c-47d4-9830-b46cea04484d",
+                "leftValue": "={{ $json.data['Post Validado? ✨'] }}",
+                "rightValue": "Sim, pode seguir! 😄",
+                "operator": {
+                  "type": "string",
+                  "operation": "equals",
+                  "name": "filter.operator.equals"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [
+          3280,
+          0
+        ],
+        "id": "bf0a13d2-d0b2-4e07-a392-c69b0f364ff8",
+        "name": "If"
+      },
+      {
+        "parameters": {
+          "promptType": "define",
+          "text": "=Apply the modification requests on the following LinkedIn post. Besides applying the requested modifications, return the same linkedin post.\n\nLinkedIn post:\n```\n{{ $('Gmail').item.json.linkedin_post }}\n```\n\n\nChange requests:\n{{ $json.data['Alterações Sugeridas 👇'] }}",
+          "hasOutputParser": true
+        },
+        "type": "@n8n/n8n-nodes-langchain.chainLlm",
+        "typeVersion": 1.6,
+        "position": [
+          3500,
+          100
+        ],
+        "id": "2fd2afb4-5061-4762-b347-d713c286896e",
+        "name": "Basic LLM Chain3"
+      },
+      {
+        "parameters": {
+          "model": {
+            "__rl": true,
+            "mode": "list",
+            "value": "gpt-4o-mini"
+          },
+          "options": {}
+        },
+        "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+        "typeVersion": 1.2,
+        "position": [
+          3600,
+          320
+        ],
+        "id": "4d73a4b9-fc22-40c9-b1f6-a5b9f43ec71e",
+        "name": "OpenAI Chat Model3",
+        "credentials": {
+          "openAiApi": {
+            "id": "nLPqEkDIvwVLWo7n",
+            "name": "OpenAi account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsonSchemaExample": "{\n  \"modified_post\": \"\"\n}"
+        },
+        "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+        "typeVersion": 1.2,
+        "position": [
+          3740,
+          320
+        ],
+        "id": "fb59bd5b-9bec-43a2-b56f-fadda21bc0e3",
+        "name": "Structured Output Parser1"
+      },
+      {
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "1ec131a4-0189-4a48-9009-82c8df93e6d2",
+                "name": "linkedin_post",
+                "value": "={{ $json.text }}",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          2840,
+          0
+        ],
+        "id": "c97de4a1-57a2-4c8f-aed1-f9edb2919b9e",
+        "name": "Edit Fields1"
+      },
+      {
+        "parameters": {
+          "assignments": {
+            "assignments": [
+              {
+                "id": "8a2d4968-daff-420a-b498-a93d12116a85",
+                "name": "text",
+                "value": "={{ $json.output.modified_post }}",
+                "type": "string"
+              }
+            ]
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.set",
+        "typeVersion": 3.4,
+        "position": [
+          3940,
+          360
+        ],
+        "id": "ca3d4684-34dd-48ad-8342-528ab1c3ff25",
+        "name": "Edit Fields2"
+      },
+      {
+        "parameters": {
+          "postAs": "organization",
+          "organization": "106914025",
+          "text": "={{ $('Edit Fields1').item.json.linkedin_post }}",
+          "additionalFields": {}
+        },
+        "type": "n8n-nodes-base.linkedIn",
+        "typeVersion": 1,
+        "position": [
+          3500,
+          -100
+        ],
+        "id": "4b356a16-cab7-4dd1-bcec-2ede7cec3cea",
+        "name": "LinkedIn",
+        "credentials": {
+          "linkedInOAuth2Api": {
+            "id": "vTKgYUC63J1U7UTF",
+            "name": "LinkedIn account"
+          }
+        }
+      }
+    ],
+    "pinData": {
+      "When clicking ‘Test workflow’": [
+        {
+          "json": {}
+        }
+      ]
+    },
+    "connections": {
+      "When clicking ‘Test workflow’": {
+        "main": [
+          [
+            {
+              "node": "RSS Read",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "RSS Read": {
+        "main": [
+          [
+            {
+              "node": "Edit Fields",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Edit Fields": {
+        "main": [
+          [
+            {
+              "node": "Aggregate",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Aggregate": {
+        "main": [
+          [
+            {
+              "node": "Basic LLM Chain",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "OpenAI Chat Model": {
+        "ai_languageModel": [
+          [
+            {
+              "node": "Basic LLM Chain",
+              "type": "ai_languageModel",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Structured Output Parser": {
+        "ai_outputParser": [
+          [
+            {
+              "node": "Basic LLM Chain",
+              "type": "ai_outputParser",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Basic LLM Chain": {
+        "main": [
+          [
+            {
+              "node": "Split Out",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Split Out": {
+        "main": [
+          [
+            {
+              "node": "HTTP Request",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "HTTP Request": {
+        "main": [
+          [
+            {
+              "node": "HTML",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "HTML": {
+        "main": [
+          [
+            {
+              "node": "Aggregate1",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Aggregate1": {
+        "main": [
+          [
+            {
+              "node": "Basic LLM Chain1",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "OpenAI Chat Model1": {
+        "ai_languageModel": [
+          [
+            {
+              "node": "Basic LLM Chain1",
+              "type": "ai_languageModel",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Basic LLM Chain1": {
+        "main": [
+          [
+            {
+              "node": "Basic LLM Chain2",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "OpenAI Chat Model2": {
+        "ai_languageModel": [
+          [
+            {
+              "node": "Basic LLM Chain2",
+              "type": "ai_languageModel",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Basic LLM Chain2": {
+        "main": [
+          [
+            {
+              "node": "Edit Fields1",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Gmail": {
+        "main": [
+          [
+            {
+              "node": "If",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "If": {
+        "main": [
+          [
+            {
+              "node": "LinkedIn",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          [
+            {
+              "node": "Basic LLM Chain3",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "OpenAI Chat Model3": {
+        "ai_languageModel": [
+          [
+            {
+              "node": "Basic LLM Chain3",
+              "type": "ai_languageModel",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Structured Output Parser1": {
+        "ai_outputParser": [
+          [
+            {
+              "node": "Basic LLM Chain3",
+              "type": "ai_outputParser",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Edit Fields1": {
+        "main": [
+          [
+            {
+              "node": "Gmail",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Basic LLM Chain3": {
+        "main": [
+          [
+            {
+              "node": "Edit Fields2",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Edit Fields2": {
+        "main": [
+          [
+            {
+              "node": "Edit Fields1",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "active": false,
+    "settings": {
+      "executionOrder": "v1"
+    },
+    "versionId": "c61e58e1-80b1-4c3b-b517-65c462965139",
+    "meta": {
+      "templateCredsSetupCompleted": true,
+      "instanceId": "c6b967c0b2eed047a285a96ade2dd13aab1bd60be543d147a0b33f65c30f0d62"
+    },
+    "id": "rDwgrQhDcuLwzZh2",
+    "tags": []
+  }
